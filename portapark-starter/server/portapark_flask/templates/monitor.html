@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PortaPark · Smart Parking Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f6ff;
+  --card: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #dbeafe;
+
+  /* Core Blue & Orange Palette */
+  --blue: #2563eb;
+  --blue-soft: #eff6ff;
+  --blue-border: #93c5fd;
+
+  --orange: #ea580c;
+  --orange-bright: #f97316;
+  --orange-soft: #fff7ed;
+  --orange-border: #fdba74;
+
+  --gray: #64748b;
+  --gray-soft: #f1f5f9;
+  --shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1120;
+  --card: #152036;
+  --ink: #f8fafc;
+  --muted: #94a3b8;
+  --line: #1e3a5f;
+
+  --blue: #3b82f6;
+  --blue-soft: rgba(59, 130, 246, 0.15);
+  --blue-border: rgba(59, 130, 246, 0.45);
+
+  --orange: #f97316;
+  --orange-bright: #fb923c;
+  --orange-soft: rgba(249, 115, 22, 0.16);
+  --orange-border: rgba(249, 115, 22, 0.48);
+
+  --gray: #94a3b8;
+  --gray-soft: rgba(148, 163, 184, 0.12);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 480px at 0% 0%, rgba(37, 99, 235, 0.12), transparent 60%),
+    radial-gradient(900px 480px at 100% 0%, rgba(249, 115, 22, 0.10), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 18px; }
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+}
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--blue), var(--orange-bright));
+  color: #fff;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 20px;
+}
+.brand h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+.sub { color: var(--muted); font-size: 12.5px; }
+
+.nav-links { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.live-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--blue-soft); border: 1px solid var(--blue-border);
+  font-size: 12.5px; font-weight: 700; color: var(--blue);
+}
+.live-pill[data-state="bad"] {
+  background: var(--orange-soft); border-color: var(--orange-border); color: var(--orange);
+}
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card); color: var(--ink);
+  font: 600 13px var(--font); text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--blue); color: var(--blue); }
+
+main { padding: 22px 0 40px; display: grid; gap: 18px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+/* HERO STATUS + LIVE AI CAMERA */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 0;
+  overflow: hidden;
+  border-width: 2.5px;
+}
+@media (min-width: 840px) {
+  .hero { grid-template-columns: 1.18fr 1fr; }
+}
+.hero-info {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero[data-tone="free"] { border-color: var(--blue); }
+.hero[data-tone="free"] .hero-info { background: var(--blue-soft); }
+.hero[data-tone="occupied"] { border-color: var(--orange); }
+.hero[data-tone="occupied"] .hero-info { background: var(--orange-soft); }
+.hero[data-tone="offline"] { border-color: var(--line); }
+.hero[data-tone="offline"] .hero-info { background: var(--gray-soft); }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  align-self: flex-start;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+  background: var(--card);
+}
+.hero[data-tone="free"] .status-badge { color: var(--blue); border: 1px solid var(--blue-border); }
+.hero[data-tone="occupied"] .status-badge { color: var(--orange); border: 1px solid var(--orange-border); }
+
+#status-title {
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 10px 0 6px;
+}
+.hero[data-tone="free"] #status-title { color: var(--blue); }
+.hero[data-tone="occupied"] #status-title { color: var(--orange); }
+
+#status-desc { margin: 0; font-size: 15px; font-weight: 500; color: var(--ink); }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .info-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.info-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.info-item span { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.info-item b { font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.info-item.near { border-color: var(--orange-border); }
+.info-item.near b { color: var(--orange); }
+
+.ai-vision-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.ai-vision-bar strong { color: var(--blue); }
+
+.hero-cam {
+  position: relative;
+  background: #09101d;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-cam img {
+  width: 100%; height: 100%;
+  min-height: 280px; max-height: 370px;
+  object-fit: cover; display: block;
+}
+.cam-top {
+  position: absolute; top: 12px; left: 12px; right: 12px;
+  display: flex; justify-content: space-between; gap: 8px; pointer-events: none;
+}
+.cam-bottom {
+  position: absolute; bottom: 12px; left: 12px; right: 12px;
+  pointer-events: none;
+}
+.cam-chip {
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(6px);
+  color: #fff; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  display: inline-block;
+}
+
+.mid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+}
+.card-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* One-Sided Frame SVG Diagram */
+.slot-svg { width: 100%; height: auto; display: block; margin: 8px 0; }
+.slot-box { fill: var(--blue-soft); stroke: var(--blue); stroke-dasharray: 6 4; stroke-width: 1.8; }
+.slot-frame-left { fill: var(--blue); }
+.slot-stick-right { fill: none; stroke: var(--orange); stroke-width: 2.2; stroke-dasharray: 5 3; }
+.sensor-node { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
+.slot-svg text { fill: var(--muted); font-size: 11px; font-weight: 700; font-family: var(--font); }
+.slot-svg .beam-lbl { fill: var(--ink); font-size: 12px; font-weight: 800; }
+.beam { stroke: var(--blue); stroke-width: 4.5; stroke-linecap: round; transition: all 0.3s; }
+.dot { fill: var(--blue); transition: all 0.3s; }
+.beam.near, .dot.near { stroke: var(--orange); fill: var(--orange); }
+.beam.none { opacity: 0.25; }
+
+/* Area & Width Summary Strip */
+.area-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0;
+}
+.area-box {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-border);
+}
+.area-box.highlight {
+  background: var(--orange-soft);
+  border-color: var(--orange-border);
+}
+.area-box span { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.area-box b { font-size: 18px; font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; }
+.area-box.highlight b { color: var(--orange); }
+.len-input {
+  width: 68px; padding: 2px 6px; border-radius: 6px;
+  border: 1px solid var(--blue-border); background: var(--card);
+  color: var(--ink); font: 800 15px var(--font);
+}
+
+.sensor-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.s-pill {
+  padding: 12px 14px; border-radius: 14px;
+  background: var(--blue-soft); border: 1.5px solid var(--blue-border);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.s-pill.near { background: var(--orange-soft); border-color: var(--orange-border); }
+.s-pill-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.s-pill-name { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.s-tag {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--card); color: var(--blue); border: 1px solid var(--blue-border);
+}
+.s-pill.near .s-tag { color: var(--orange); border-color: var(--orange-border); }
+.s-val { font-size: 24px; font-weight: 800; color: var(--blue); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.s-pill.near .s-val { color: var(--orange); }
+.s-bar-track { height: 7px; border-radius: 999px; background: rgba(100, 116, 139, 0.18); overflow: hidden; }
+.s-bar-fill { height: 100%; width: 0%; border-radius: 999px; background: var(--blue); transition: width 0.3s; }
+.s-pill.near .s-bar-fill { background: var(--orange); }
+
+.stat-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0;
+}
+.stat-box {
+  padding: 14px; border-radius: 14px;
+  background: var(--blue-soft); border: 1px solid var(--blue-border);
+}
+.stat-box.orange {
+  background: var(--orange-soft); border-color: var(--orange-border);
+}
+.stat-num { font-size: 28px; font-weight: 800; color: var(--blue); line-height: 1.1; }
+.stat-box.orange .stat-num { color: var(--orange); }
+
+.type-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.type-tag {
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--orange-soft); border: 1px solid var(--orange-border);
+  color: var(--orange); font-weight: 700; font-size: 12.5px;
+}
+
+#hours {
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 110px; padding-top: 12px;
+  border-bottom: 1px solid var(--line);
+}
+#hours div {
+  flex: 1;
+  background: var(--blue);
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+#hours div.busy { background: var(--orange); }
+.axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+
+.ev-list { max-height: 150px; overflow-y: auto; margin-top: 8px; }
+.ev-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px;
+}
+.ev-time { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+
+.demo-drawer {
+  border: 2px dashed var(--orange);
+  display: none;
+}
+.sim-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap top-bar">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div>
+        <h1>PortaPark</h1>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <div class="live-pill" id="conn-pill" data-state="bad">
+        <span class="live-dot"></span>
+        <span id="conn-text">Connecting...</span>
+      </div>
+      <button class="btn" id="simToggle" type="button">Demo Simulator</button>
+      <button class="btn" id="themeBtn" type="button">Theme</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Optional Demo Simulator -->
+  <section class="card demo-drawer" id="demoDrawer">
+    <div class="card-title">
+      <span>Quick Scenario Simulator (Sends Readings in Meters)</span>
+      <span class="sub">Simulates one-sided camera + dual ultrasonic sensors</span>
+    </div>
+    <div class="sim-row">
+      <button class="btn" onclick="sim('empty')">Empty Slot (2.50 m Width)</button>
+      <button class="btn" onclick="sim('car')">Car Straight (0.54 m / 0.56 m)</button>
+      <button class="btn" onclick="sim('crooked_car')">Crooked Car (0.32 m / 1.18 m)</button>
+      <button class="btn" onclick="sim('motorcycle')">Motorcycle (0.68 m / 2.45 m)</button>
+      <button class="btn" onclick="sim('tricycle')">Tricycle (0.50 m / 0.62 m)</button>
+      <button class="btn" onclick="sim('person')">Person (0.75 m / 2.45 m)</button>
+      <button class="btn" onclick="sim('object')">Obstacle (0.54 m / 0.55 m)</button>
+    </div>
+  </section>
+
+  <!-- MAIN USER HERO: BLUE = FREE, ORANGE = OCCUPIED -->
+  <section class="card hero" id="hero" data-tone="offline">
+    <div class="hero-info">
+      <div>
+        <span class="status-badge" id="status-kicker">WAITING FOR SIGNAL</span>
+        <div id="status-title">Connecting to Slot...</div>
+        <p id="status-desc">One-sided frame with ESP32-CAM and 2 ultrasonic sensors measuring slot width and area in meters.</p>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <span>Detected in Slot</span>
+          <b id="info-class">—</b>
+        </div>
+        <div class="info-item" id="info-sensor-box">
+          <span>Sensors (Meters)</span>
+          <b id="info-sensors">No data</b>
+        </div>
+        <div class="info-item">
+          <span>Detected Width</span>
+          <b id="info-width">—</b>
+        </div>
+        <div class="info-item">
+          <span>Parking Spot Area</span>
+          <b id="info-area">—</b>
+        </div>
+      </div>
+
+      <div class="ai-vision-bar">
+        <div>
+          <strong>AI + Ultrasonic Fusion:</strong>
+          <span id="ai-summary">Waiting for readings from ESP32-CAM and Arduino Uno...</span>
+        </div>
+        <span class="sub" id="ai-time">Auto</span>
+      </div>
+    </div>
+
+    <div class="hero-cam">
+      <div class="cam-top">
+        <span class="cam-chip">Live Slot Camera</span>
+        <span class="cam-chip" id="cam-ip">Waiting...</span>
+      </div>
+      <img id="cam" alt="Live view of the monitored parking slot" onerror="this.style.opacity='0.2'" onload="this.style.opacity='1'">
+      <div class="cam-bottom">
+        <span class="cam-chip" id="cam-caption">AI Vision + One-Sided Ultrasonic Width &amp; Area</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MIDDLE ROW: ONE-SIDED FRAME SLOT WIDTH, AREA & SENSORS (IN METERS) -->
+  <div class="mid-grid">
+
+    <section class="card">
+      <div class="card-title">
+        <span>One-Sided Frame: Slot Width &amp; Area (Meters)</span>
+        <span class="sub">Blue = Clear (&ge;<span id="taken-m">1.00</span> m) · Orange = Object (&lt;1.00 m)</span>
+      </div>
+
+      <!-- One-Sided Frame SVG: Both Sensor 1 & Sensor 2 on Left Frame pointing Right toward Opposite Target Stick -->
+      <svg class="slot-svg" viewBox="0 0 440 150" role="img" aria-label="One-sided sensor frame pointing across parking slot to opposite target stick">
+        <!-- Top Header Labels -->
+        <text x="20" y="15" style="fill:var(--blue)">LEFT: MAIN FRAME (CAM + 2 SENSORS)</text>
+        <text x="420" y="15" text-anchor="end" style="fill:var(--orange)">RIGHT: OPPOSITE TARGET STICK</text>
+
+        <!-- Monitored Parking Slot Area Box (x=42 to x=398, width=356px represents 0.00m to 4.00m range) -->
+        <rect class="slot-box" x="42" y="24" width="356" height="92" rx="8"/>
+
+        <!-- 1.00m Obstacle Threshold Line (at x = 42 + (1.0/4.0)*356 = 131) -->
+        <line x1="131" y1="24" x2="131" y2="116" stroke="var(--orange)" stroke-dasharray="4 3" stroke-width="1.5" stroke-opacity="0.7"/>
+        <text x="131" y="111" text-anchor="middle" style="fill:var(--orange); font-size:10px;">1.00 m</text>
+
+        <!-- 2.50m Standard Slot Width Reference Line (at x = 42 + (2.5/4.0)*356 = 264.5) -->
+        <line x1="265" y1="24" x2="265" y2="116" stroke="var(--muted)" stroke-dasharray="3 3" stroke-opacity="0.45"/>
+        <text x="265" y="111" text-anchor="middle" style="font-size:10px;">2.50 m</text>
+
+        <!-- LEFT: One-Sided Wooden/Portable Frame (Holds Cam + Sensor 1 + Sensor 2) -->
+        <rect class="slot-frame-left" x="22" y="22" width="20" height="96" rx="5"/>
+        <circle class="sensor-node" cx="42" cy="50" r="5"/>
+        <circle class="sensor-node" cx="42" cy="88" r="5"/>
+
+        <!-- RIGHT: Opposite Boundary Stick / Target (No Sensors) -->
+        <rect class="slot-stick-right" x="398" y="24" width="16" height="92" rx="4"/>
+
+        <!-- Sensor 1 Beam (Upper on Left Frame, shooting Left -> Right) -->
+        <line id="beam1" class="beam none" x1="42" y1="50" x2="398" y2="50"/>
+        <circle id="dot1" class="dot" cx="42" cy="50" r="6" style="display:none"/>
+        <text id="svg-d1" class="beam-lbl" x="56" y="43"></text>
+
+        <!-- Sensor 2 Beam (Lower on Left Frame, shooting Left -> Right) -->
+        <line id="beam2" class="beam none" x1="42" y1="88" x2="398" y2="88"/>
+        <circle id="dot2" class="dot" cx="42" cy="88" r="6" style="display:none"/>
+        <text id="svg-d2" class="beam-lbl" x="56" y="81"></text>
+
+        <!-- Clean Non-Overlapping Bottom Scale Labels -->
+        <text x="22" y="138">0.00 m (S1: Pin 9/10, S2: Pin 11/12)</text>
+        <text x="414" y="138" text-anchor="end">Max Range: 4.00 m</text>
+      </svg>
+
+      <!-- Calculated Slot Width & Area Strip -->
+      <div class="area-strip">
+        <div class="area-box" id="box-width">
+          <span>Detected Width (W)</span>
+          <b id="val-width">— m</b>
+        </div>
+        <div class="area-box">
+          <span>Slot Length (L)</span>
+          <div>
+            <input type="number" id="slot-len-input" class="len-input" value="5.0" min="0.5" max="20" step="0.1" onchange="updateSlotLength(this.value)">
+            <b style="font-size:14px">m</b>
+          </div>
+        </div>
+        <div class="area-box highlight">
+          <span>Parking Spot Area (W×L)</span>
+          <b id="val-area">— m²</b>
+        </div>
+      </div>
+
+      <!-- Dual Ultrasonic Sensor Cards (Both on Left Frame, Displayed in Meters) -->
+      <div class="sensor-pills">
+        <div class="s-pill" id="pill-d1">
+          <div class="s-pill-top">
+            <span class="s-pill-name">Sensor 1 (Front · Pin 9/10)</span>
+            <span class="s-tag" id="tag-d1">WAITING</span>
+          </div>
+          <div class="s-val" id="v-d1">No data</div>
+          <div class="s-bar-track"><div class="s-bar-fill" id="bar-d1"></div></div>
+        </div>
+
+        <div class="s-pill" id="pill-d2">
+          <div class="s-pill-top">
+            <span class="s-pill-name">Sensor 2 (Rear · Pin 11/12)</span>
+            <span class="s-tag" id="tag-d2">WAITING</span>
+          </div>
+          <div class="s-val" id="v-d2">No data</div>
+          <div class="s-bar-track"><div class="s-bar-fill" id="bar-d2"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <span>Today's Slot Usage</span>
+        <span class="sub">Live daily statistics</span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box orange">
+          <div class="sub">Vehicles Parked Today</div>
+          <div class="stat-num" id="k-arr">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="sub">Average Stay Duration</div>
+          <div class="stat-num" id="k-stay">—</div>
+        </div>
+      </div>
+
+      <div class="sub" style="font-weight:700; color:var(--ink)">Vehicles Identified by AI Today:</div>
+      <div class="type-list" id="k-types">
+        <span class="sub">No vehicles recorded yet today.</span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- BOTTOM ROW: HOURLY BUSYNESS & RECENT ACTIVITY -->
+  <div class="mid-grid">
+    <section class="card">
+      <div class="card-title">
+        <span>Hourly Slot Occupancy Today</span>
+        <span class="sub">Blue = Light · Orange = Busy</span>
+      </div>
+      <div id="hours"></div>
+      <div class="axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span></div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <span>Recent Slot Timeline</span>
+        <span class="sub">Latest arrivals &amp; departures</span>
+      </div>
+      <div class="ev-list" id="events">
+        <div class="sub">No activity recorded yet today.</div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const hhmm = ts => new Date(ts * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+const MAX_RANGE_M = 4.00; // 4.00 meters full ultrasonic scale
+
+function fmtM(valCm) {
+  if (valCm === null || valCm === undefined || valCm < 0) return 'No data';
+  if (valCm >= 999) return '> 4.00 m';
+  return (valCm / 100.0).toFixed(2) + ' m';
+}
+
+function updateOneSidedBeam(n, valCm, takenCm) {
+  const ok = valCm !== null && valCm !== undefined && valCm >= 2;
+  const valM = ok ? (valCm >= 999 ? MAX_RANGE_M : Math.min(MAX_RANGE_M, valCm / 100.0)) : MAX_RANGE_M;
+  const seen = ok && valCm < 999;
+  const x0 = 42; // Both sensors start from the Left One-Sided Frame (x=42)
+  const maxPx = 356; // Full width to Opposite Stick at x=398
+  const len = ok ? Math.max(16, (valM / MAX_RANGE_M) * maxPx) : maxPx;
+  const x2 = x0 + len;
+  const near = ok && valCm < takenCm;
+
+  const l = $('beam' + n), d = $('dot' + n), pill = $('pill-d' + n);
+  const tag = $('tag-d' + n), bar = $('bar-d' + n), svgTxt = $('svg-d' + n);
+
+  l.setAttribute('x2', x2);
+  l.setAttribute('class', 'beam' + (near ? ' near' : '') + (ok ? '' : ' none'));
+  d.setAttribute('cx', x2);
+  d.style.display = ok ? '' : 'none';
+  d.setAttribute('class', 'dot' + (near ? ' near' : ''));
+
+  pill.className = 's-pill' + (near ? ' near' : '');
+  $('v-d' + n).textContent = fmtM(valCm);
+
+  if (!ok) {
+    tag.textContent = 'NO UNO DATA';
+    bar.style.width = '0%';
+    svgTxt.textContent = '';
+  } else if (near) {
+    tag.textContent = 'OBJECT <' + (takenCm / 100.0).toFixed(2) + 'm';
+    bar.style.width = Math.max(8, Math.round((valM / MAX_RANGE_M) * 100)) + '%';
+    svgTxt.textContent = (valCm / 100.0).toFixed(2) + ' m';
+    svgTxt.setAttribute('x', Math.min(350, x2 + 10));
+  } else {
+    tag.textContent = 'SLOT WIDTH / CLEAR';
+    bar.style.width = Math.max(8, Math.round((valM / MAX_RANGE_M) * 100)) + '%';
+    svgTxt.textContent = valCm >= 999 ? '>4.00 m' : ((valCm / 100.0).toFixed(2) + ' m');
+    svgTxt.setAttribute('x', Math.min(345, x2 - 48));
+  }
+}
+
+async function updateSlotLength(val) {
+  const len = parseFloat(val);
+  if (!len || len <= 0) return;
+  try {
+    await fetch('/api/uno', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({slot_length_m: len})
+    });
+    refresh();
+  } catch(e) {}
+}
+
+async function sim(scenario) {
+  try {
+    await fetch('/api/simulate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({scenario})
+    });
+    refresh();
+  } catch(e) {}
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/api/latest');
+    if (!res.ok) throw new Error('Server offline');
+    const latest = await res.json();
+    if (latest.length) {
+      const d = latest[0];
+      const stale = d.age_s > 60;
+      const status = stale ? 'offline' : d.status;
+      const takenCm = d.taken_cm || 100;
+      $('taken-m').textContent = (takenCm / 100.0).toFixed(2);
+
+      const tone = status === 'free' ? 'free' : (status === 'offline' ? 'offline' : 'occupied');
+      $('hero').dataset.tone = tone;
+
+      $('conn-text').textContent = stale ? ('Signal paused (' + Math.round(d.age_s) + 's)') : 'Live Auto-AI + Ultrasonic (m)';
+      $('conn-pill').dataset.state = stale ? 'bad' : 'ok';
+
+      const d1Ok = d.d1 !== null && d.d1 !== undefined && d.d1 >= 0;
+      const d2Ok = d.d2 !== null && d.d2 !== undefined && d.d2 >= 0;
+      const s1M = fmtM(d.d1);
+      const s2M = fmtM(d.d2);
+      const anyNear = (d1Ok && d.d1 >= 2 && d.d1 < takenCm) || (d2Ok && d.d2 >= 2 && d.d2 < takenCm);
+
+      $('info-sensors').textContent = (d1Ok || d2Ok) ? ('S1: ' + s1M + ' · S2: ' + s2M) : 'No Uno data';
+      $('info-sensor-box').className = 'info-item' + (anyNear ? ' near' : '');
+
+      // Calculate Slot Width (m) & Area (m^2)
+      const lenM = parseFloat($('slot-len-input').value) || d.slot_length_m || 5.0;
+      if (d.slot_width_m !== null && d.slot_width_m !== undefined) {
+        const areaM2 = (d.slot_width_m * lenM).toFixed(2);
+        $('info-width').textContent = d.slot_width_m.toFixed(2) + ' m';
+        $('info-area').textContent = areaM2 + ' m²';
+        $('val-width').textContent = d.slot_width_m.toFixed(2) + ' m';
+        $('val-area').textContent = areaM2 + ' m²';
+      } else {
+        $('info-width').textContent = '—';
+        $('info-area').textContent = '—';
+        $('val-width').textContent = '— m';
+        $('val-area').textContent = '— m²';
+      }
+
+      if (status === 'free') {
+        $('status-kicker').textContent = 'SLOT AVAILABLE · BAKANTE';
+        $('status-title').textContent = 'Slot is FREE';
+        $('status-desc').textContent = d.ai_desc || 'Safe to park here. Camera AI and ultrasonic sensors confirm the slot is clear.';
+      } else if (status === 'offline') {
+        $('status-kicker').textContent = 'OFFLINE · WAITING FOR SIGNAL';
+        $('status-title').textContent = 'No Signal';
+        $('status-desc').textContent = 'Check that the ESP32-CAM and Arduino Uno (COM7) are plugged into power.';
+      } else {
+        $('status-kicker').textContent = 'SLOT OCCUPIED · MAY LAMAN';
+        $('status-title').textContent = 'Occupied · ' + (d.display_class || 'Taken');
+        $('status-desc').textContent = d.ai_desc ? ('AI Vision: "' + d.ai_desc + '"') : d.decision_reason;
+      }
+
+      const colorPrefix = d.ai_color ? (d.ai_color + ' ') : '';
+      $('info-class').textContent = colorPrefix + (d.display_class || '—');
+
+      if (d.ai_error) {
+        $('ai-summary').textContent = 'Note: ' + d.ai_error;
+        $('ai-time').textContent = 'Standby';
+      } else if (d.ai_label) {
+        $('ai-summary').textContent = (d.ai_display_label || d.ai_label) +
+          ((d1Ok || d2Ok) ? (' | Width: ' + (d.slot_width_m ? d.slot_width_m.toFixed(2) + ' m' : '—')) : '');
+        $('ai-time').textContent = d.ai_age_s !== null ? ('Updated ' + Math.round(d.ai_age_s) + 's ago') : 'Live';
+      } else {
+        $('ai-summary').textContent = d.decision_reason || 'Reading camera and ultrasonic sensors...';
+        $('ai-time').textContent = 'Auto';
+      }
+
+      $('cam-ip').textContent = d.cam_ip ? ('Cam: ' + d.cam_ip) : (d.uno_port ? ('Uno: ' + d.uno_port) : 'Demo Mode');
+      $('cam-caption').textContent = 'S1: ' + s1M + ' · S2: ' + s2M +
+        (d.slot_width_m ? (' | Area: ' + (d.slot_width_m * lenM).toFixed(2) + ' m²') : '');
+      if (d.cam_ip) {
+        $('cam').src = '/camera.jpg?t=' + Date.now();
+      }
+
+      updateOneSidedBeam(1, d.d1, takenCm);
+      updateOneSidedBeam(2, d.d2, takenCm);
+    }
+
+    const s = await (await fetch('/api/stats')).json();
+    $('k-arr').textContent = s.arrivals ?? 0;
+    $('k-stay').textContent = s.avg_stay_min !== null && s.avg_stay_min !== undefined ? (s.avg_stay_min + ' min') : '—';
+
+    const types = Object.entries(s.arrival_types || {});
+    $('k-types').innerHTML = types.length
+      ? types.map(([k, v]) => `<span class="type-tag">${v}× ${k.replace(/_/g, ' ').toUpperCase()}</span>`).join('')
+      : '<span class="sub">No vehicles recorded yet today.</span>';
+
+    $('events').innerHTML = (s.events && s.events.length)
+      ? s.events.map(e => {
+          const label = e.status === 'free' ? 'Slot became FREE' : ('Occupied (' + (e.ai_label || e.status).replace(/_/g, ' ') + ')');
+          return `<div class="ev-item"><span class="ev-time">${hhmm(e.ts)}</span><span>${label}</span></div>`;
+        }).join('')
+      : '<div class="sub">No status transitions yet today.</div>';
+
+    const h = await (await fetch('/api/hourly')).json();
+    $('hours').innerHTML = h.map((v, i) => {
+      const val = v ?? 0;
+      return `<div class="${val >= 50 ? 'busy' : ''}" title="${i}:00 — ${val}% occupied" style="height:${Math.max(4, val)}%"></div>`;
+    }).join('');
+  } catch (e) {
+    $('conn-text').textContent = 'Server Offline';
+    $('conn-pill').dataset.state = 'bad';
+  }
+}
+
+$('simToggle').onclick = () => {
+  const el = $('demoDrawer');
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+};
+
+$('themeBtn').onclick = () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+};
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

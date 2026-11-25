@@ -61,11 +61,6 @@ Wiring is in [`docs/WIRING.md`](docs/WIRING.md).
 5. Open `PortaPark_Uno_Sensors.ino`, choose Board **Arduino Uno**, and upload.
 6. Start the server, power both boards, and watch the dashboard fill in within a few seconds.
 
-**Things that went wrong for us**
-
-- The camera needs `CAMERA_MODEL_AI_THINKER`, a 10 MHz camera clock, and a fully seated ribbon cable. Use a short, thick USB cable and a 2 A supply.
-- The ESP32 only works on 2.4 GHz WiFi. Put the PC and the board on the same network and allow port 5000 in the Windows firewall.
-- The Gemini free tier has request limits. The server only asks Gemini when the picture changes and falls back to the Edge Impulse model when it is limited.
 
 ## Settings
 
